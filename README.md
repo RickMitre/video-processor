@@ -14,11 +14,11 @@ Ferramenta para processamento e upload de vídeos de aulas.
    git clone https://github.com/RickMitre/video-processor.git
    ```
 
-   Ou baixe o ZIP direto: https://github.com/RickMitre/video-processor/archive/refs/heads/main.zip
+   Ou baixe o ZIP direto: https://github.com/RickMitre/video-processor/archive/refs/heads/master.zip
 
 2. Entre na pasta:
    ```
-   cd video-processor-dist
+   cd video-processor
    ```
 
 3. Execute o instalador:
