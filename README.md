@@ -35,6 +35,80 @@ Para abrir a interface gráfica:
 video-processor-gui
 ```
 
+---
+
+## Tutorial
+
+### 1. Abrindo o programa
+
+Execute `video-processor-gui` no terminal. A janela do programa vai abrir.
+
+---
+
+### 2. Preenchendo os campos
+
+**Diretório de Vídeos**
+Caminho da pasta raiz onde os vídeos ficam salvos.
+Exemplo: `/home/me/videos/processamento`
+
+**Matéria**
+Nome da matéria em minúsculas. Exemplos: `ciencias`, `portugues`, `matematica`, `historia`, `geografia`, `biblia`
+
+**Ano**
+Ano escolar. Exemplo: `2`
+
+**Semana**
+Número da semana (ou intervalo) a processar:
+- `1` — só a semana 1
+- `2-5` — semanas de 2 a 5
+- `all` — todas as semanas
+
+**Bimestres**
+Marque os bimestres que deseja processar (1, 2, 3 ou 4).
+
+**Output Files**
+Arquivos gerados pelo script. Normalmente não precisa alterar.
+
+---
+
+### 3. Escolhendo as funções
+
+Marque o que deseja fazer:
+
+- **Download** — baixa o script da aula do servidor
+- **Process** — executa o script e gera os vídeos
+- **Upload** — envia os vídeos para o Google Drive
+
+**Uso mais comum:** marcar Download + Process + Upload para processar e enviar tudo de uma vez.
+
+---
+
+### 4. Executando
+
+Clique em **Executar**. O log na parte inferior mostra o progresso em tempo real.
+
+Ao terminar, aparece um relatório com o resultado de cada semana processada.
+
+---
+
+### 5. Exemplos de uso
+
+**Processar e enviar a semana 3 de Ciências, ano 2:**
+- Matéria: `ciencias`
+- Ano: `2`
+- Semana: `3`
+- Bimestre: marcar `1`
+- Funções: Download + Process + Upload
+
+**Processar várias semanas de uma vez:**
+- Semana: `1-8`
+- Bimestre: marcar `1`
+- Funções: Download + Process + Upload
+
+---
+
+### 6. Atualização
+
 ## Atualização
 
 Para atualizar para uma versão nova, entre na pasta do repositório e rode:
