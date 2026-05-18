@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """vizsh — visualizador de cenas para scripts .sh de geração de vídeo."""
 
+import atexit
 import json
 import queue
 import re
+import signal
 import subprocess
 import sys
 import threading
+import urllib.request
 import webbrowser
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from concurrent.futures import ThreadPoolExecutor
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer as _ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -965,12 +969,98 @@ def make_handler(state: dict, asset_dir: Path, broadcaster: _SSEBroadcaster):
             self.send_header("Content-Type", ct)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            self.wfile.write(body)
+            try:
+                self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # browser closed the connection early — normal
 
         def log_message(self, *_):
             pass
 
+        def handle_error(self):
+            pass  # silence connection reset tracebacks
+
     return H
+
+
+_IMG_EXTS = {".webp", ".mp4", ".jpg", ".jpeg", ".png"}
+_GET_RE   = re.compile(r'^\s*_get_resource\s+(\S+)(?:\s+(\S+))?\s*$', re.MULTILINE)
+
+
+def _local_name(url: str) -> str:
+    """Derive local filename from a _get_resource URL (mirrors the .sh logic)."""
+    name = url.split("/")[-1]
+    if name.endswith(".png"):
+        name = name[:-4] + ".webp"
+    return name
+
+
+def _download_assets(sh_path: Path) -> list[Path]:
+    """Download image/video assets referenced in the .sh; return list of new files."""
+    content = sh_path.read_text(encoding="utf-8", errors="ignore")
+    asset_dir = sh_path.parent
+
+    tasks: list[tuple[str, str | None, Path]] = []
+    for m in _GET_RE.finditer(content):
+        url1, url2 = m.group(1), m.group(2)
+        name = _local_name(url1)
+        if Path(name).suffix.lower() not in _IMG_EXTS:
+            continue                    # skip mp3, etc.
+        dest = asset_dir / name
+        if dest.exists():
+            continue                    # already present, don't touch
+        tasks.append((url1, url2, dest))
+
+    if not tasks:
+        return []
+
+    print(f"  baixando {len(tasks)} asset(s)...")
+
+    errors: list[str] = []
+
+    def _fetch(task: tuple[str, str | None, Path]) -> Path | None:
+        url1, url2, dest = task
+        last_err = ""
+        for url in filter(None, [url1, url2]):
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "vizsh/1.0"})
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    dest.write_bytes(resp.read())
+                return dest
+            except Exception as e:
+                last_err = f"{dest.name}: {e}"
+                if dest.exists():
+                    dest.unlink(missing_ok=True)
+        errors.append(last_err)
+        return None
+
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        results = list(ex.map(_fetch, tasks))
+
+    downloaded = [r for r in results if r is not None]
+    failed     = len(tasks) - len(downloaded)
+
+    if downloaded:
+        print(f"  ✓ {len(downloaded)} baixado(s)")
+    if errors:
+        print(f"  ✗ {failed} falhou:")
+        for e in errors[:5]:           # mostra até 5 erros
+            print(f"    {e}")
+        if len(errors) > 5:
+            print(f"    ... e mais {len(errors)-5}")
+        print("  (continuando sem os assets — imagens podem não aparecer)")
+    return downloaded
+
+
+def _cleanup(files: list[Path]) -> None:
+    """Delete files that were downloaded by vizsh."""
+    for f in files:
+        try:
+            f.unlink(missing_ok=True)
+        except Exception:
+            pass
+    if files:
+        print(f"\n  {len(files)} asset(s) removido(s).")
 
 
 _SCALE_CACHE = Path.home() / ".cache" / "vizsh" / "scale.txt"
@@ -1136,6 +1226,11 @@ def serve(sh_path: Path):
             scenes, sh_path.name, state['version'], libass_scale
         ).encode('utf-8')
 
+    # download assets and schedule cleanup on exit
+    downloaded = _download_assets(sh_path)
+    atexit.register(_cleanup, downloaded)
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))  # SIGTERM → atexit
+
     rebuild(parse_sh(sh_path))
 
     def on_change():
@@ -1148,7 +1243,11 @@ def serve(sh_path: Path):
 
     _FileWatcher(sh_path, on_change)
 
-    httpd = ThreadingHTTPServer(
+    class _Server(_ThreadingHTTPServer):
+        def handle_error(self, request, client_address):
+            pass  # silence BrokenPipe / ConnectionReset tracebacks
+
+    httpd = _Server(
         ("127.0.0.1", PORT),
         make_handler(state, sh_path.parent, broadcaster),
     )
