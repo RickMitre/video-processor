@@ -1,6 +1,30 @@
-# Video Processor
+# Ferramentas de Produção de Vídeo
 
-Ferramenta para processamento e upload de vídeos de aulas.
+Duas ferramentas para o pipeline de criação de vídeos de aula:
+
+| Ferramenta | Descrição |
+|---|---|
+| **video-processor** | Interface gráfica para processar e enviar vídeos (Java) |
+| **vizsh** | Visualizador de cenas para scripts `.sh` de geração FFmpeg (Python) |
+
+## Instalação (tudo de uma vez)
+
+```bash
+git clone https://github.com/RickMitre/video-processor.git
+cd video-processor
+bash install.sh
+```
+
+Isso instala ambas as ferramentas. Para instalar só uma:
+
+```bash
+bash video-processor/install.sh   # só o video-processor
+bash vizsh/install.sh             # só o vizsh
+```
+
+---
+
+## video-processor
 
 ## Requisitos
 
@@ -109,10 +133,26 @@ Ao terminar, aparece um relatório com o resultado de cada semana processada.
 
 ### 6. Atualização
 
-## Atualização
-
-Para atualizar para uma versão nova, entre na pasta do repositório e rode:
-```
+Para atualizar para uma versão nova:
+```bash
 git pull
 bash install.sh
 ```
+
+---
+
+## vizsh
+
+Visualizador de cenas para scripts `.sh` de geração de vídeo com FFmpeg.
+
+```bash
+cd pasta-do-video
+vizsh                     # auto-detecta o .sh no diretório
+vizsh caminho/video.sh   # ou passe o caminho explícito
+```
+
+Abre em `http://localhost:9000` com preview das cenas, texto posicionado, imagens overlay e live-reload quando o `.sh` é editado.
+
+### Requisitos vizsh
+- Python 3.10+
+- ffmpeg

@@ -1,0 +1,55 @@
+#!/bin/bash
+set -e
+
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+DIST_DIR="$(dirname "$SCRIPT_PATH")"
+APP_DIR="$HOME/video-processor-app"
+BIN_DIR="$HOME/.local/bin"
+
+echo "📁 Criando estrutura..."
+mkdir -p "$APP_DIR/bin"
+mkdir -p "$APP_DIR/lib"
+mkdir -p "$BIN_DIR"
+
+echo "📋 Copiando arquivos..."
+cp "$DIST_DIR/lib/video-processor-cli.jar" "$APP_DIR/lib/video-processor-cli.jar"
+cp "$DIST_DIR/lib/video-processor-gui.jar" "$APP_DIR/lib/video-processor-gui.jar"
+
+echo "🔧 Criando executáveis..."
+
+cat > "$APP_DIR/bin/video-processor" << 'SCRIPT_EOF'
+#!/bin/bash
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+java -jar "$SCRIPT_DIR/../lib/video-processor-cli.jar" "$@"
+SCRIPT_EOF
+
+cat > "$APP_DIR/bin/video-processor-gui" << 'SCRIPT_EOF'
+#!/bin/bash
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+java -jar "$SCRIPT_DIR/../lib/video-processor-gui.jar" "$@"
+SCRIPT_EOF
+
+chmod +x "$APP_DIR/bin/video-processor"
+chmod +x "$APP_DIR/bin/video-processor-gui"
+
+echo "🔗 Criando atalhos..."
+ln -sf "$APP_DIR/bin/video-processor" "$BIN_DIR/video-processor"
+ln -sf "$APP_DIR/bin/video-processor-gui" "$BIN_DIR/video-processor-gui"
+
+# Adiciona ~/.local/bin ao PATH se ainda não estiver
+LINE='export PATH="$HOME/.local/bin:$PATH"'
+if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
+  for RC in "$HOME/.bashrc" "$HOME/.zshrc"; do
+    if [ -f "$RC" ] && ! grep -qF "$LINE" "$RC"; then
+      echo "" >> "$RC"
+      echo "# added by video-processor install" >> "$RC"
+      echo "$LINE" >> "$RC"
+      echo "  PATH adicionado em $RC"
+    fi
+  done
+  export PATH="$BIN_DIR:$PATH"
+fi
+
+echo "✅ video-processor instalado!"
