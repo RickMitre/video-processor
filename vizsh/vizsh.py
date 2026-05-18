@@ -110,6 +110,7 @@ def parse_scene(basename, letter, ass, chunk):
     margin   = mr if mr else ml
     fontsize = int(style.get("Fontsize", "0") or "0") if style else 0
     color    = _color_name(style.get("PrimaryColour", "&H00000000")) if style else "Black"
+    bold     = bool(int(style.get("Bold", "0") or "0")) if style else False
 
     pos  = None
     text = ""
@@ -141,6 +142,7 @@ def parse_scene(basename, letter, ass, chunk):
         "fontsize":        fontsize,
         "margin":          margin,
         "color":           color,
+        "bold":            bold,
         "text":            text,
         "images":          images,
         "has_image":       bool(images),
@@ -593,7 +595,8 @@ function renderScene() {
     textWrap.style.left  = s.pos[0] + 'px';
     textWrap.style.top   = s.pos[1] + 'px';
     textWrap.style.width = ((s.pos ? Math.min(2 * s.pos[0], CW) : CW) * LIBASS_SCALE) + 'px';
-    textInner.style.fontSize = (s.fontsize * LIBASS_SCALE) + 'px';
+    textInner.style.fontSize   = (s.fontsize * LIBASS_SCALE) + 'px';
+    textInner.style.fontWeight = s.bold ? 'bold' : 'normal';
     textInner.className  = s.color.toLowerCase();
     textInner.textContent = s.text;
     hndRight.style.display  = selected === 'text' ? '' : 'none';
